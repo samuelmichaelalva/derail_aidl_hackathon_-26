@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DERAIL — Evidence-Grounded Forward Verification | Hack on Track 2026</title>
+  <meta name="description" content="AI-powered multimodal claim verification prototype. Stop misinformation before it spreads.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient Rail Yard Background -->
+  <div class="rail-ambient-bg">
+    <div class="rail-grid-lines"></div>
+    <div class="ambient-glow glow-emerald"></div>
+    <div class="ambient-glow glow-crimson"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="top-header">
+      <div class="brand-group">
+        <div class="brand-badge">
+          <span class="signal-dot"></span>
+          <span class="brand-title">DERAIL</span>
+        </div>
+        <span class="brand-slogan">Stop Misinformation Before It Spreads</span>
+      </div>
+
+      <div class="header-tags">
+        <span class="pill pill-subtle">Hack on Track 2026</span>
+        <span class="pill pill-accent">PS3: Is This Forward True?</span>
+        <span class="pill pill-domain">GenAI Domain</span>
+      </div>
+
+      <div class="control-actions">
+        <div class="mode-toggle-group">
+          <button id="mode-auto" class="mode-btn active" title="Play automated presentation walk-through">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Auto Demo
+          </button>
+          <button id="mode-step" class="mode-btn" title="Inspect step-by-step manually">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>
+            Step Mode
+          </button>
+        </div>
+        <button id="btn-restart" class="btn btn-ghost" title="Reset to start">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Stage Breadcrumbs / Progress Rail -->
+    <nav class="progress-rail" aria-label="Verification Journey Stages">
+      <div class="stage-track-line">
+        <div id="progress-indicator" class="progress-fill"></div>
+      </div>
+      <div class="stage-nodes">
+        <div class="stage-node active" data-stage="1">
+          <div class="node-bullet">01</div>
+          <div class="node-label">Forward Arrival</div>
+        </div>
+        <div class="stage-node" data-stage="2">
+          <div class="node-bullet">02</div>
+          <div class="node-label">Claim Extraction</div>
+        </div>
+        <div class="stage-node" data-stage="3">
+          <div class="node-bullet">03</div>
+          <div class="node-label">Investigation</div>
+        </div>
+        <div class="stage-node" data-stage="4">
+          <div class="node-bullet">04</div>
+          <div class="node-label">Evidence Station</div>
+        </div>
+        <div class="stage-node" data-stage="5">
+          <div class="node-bullet">05</div>
+          <div class="node-label">Derail Checkpoint</div>
+        </div>
+        <div class="stage-node" data-stage="6">
+          <div class="node-bullet">06</div>
+          <div class="node-label">Verdict & Why</div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Viewport for Stages -->
+    <main class="main-stage-viewport">
+      
+      <!-- STAGE 1: FORWARD ARRIVAL & MODALITY SELECTION -->
+      <section id="stage-1" class="stage-section active">
+        <div class="hero-header">
+          <div class="alert-banner">
+            <span class="pulse-warning"></span>
+            <span>Incoming Unverified Dispatch Detected</span>
+          </div>
+          <h1 class="hero-title">Something has arrived. We need to verify it.</h1>
+          <p class="hero-desc">
+            Misinformation travels unchecked when entire forwards are taken at face value. 
+            Select an incoming forward to initiate atomic claim decomposition and railway verification.
+          </p>
+        </div>
+
+        <!-- Modality Selector Pills -->
+        <div class="modality-selector-wrapper">
+          <div class="selector-label">Select Demonstration Input Modality:</div>
+          <div id="modality-pills" class="modality-pills">
+            <!-- Injected via JavaScript -->
+          </div>
+        </div>
+
+        <!-- Active Forward Card Preview -->
+        <div class="forward-preview-container">
+          <div class="forward-card-header">
+            <div class="source-info">
+              <span id="forward-icon" class="modality-icon">💬</span>
+              <div>
+                <div id="forward-sender" class="forward-sender-text">+91 98450 XXXXX</div>
+                <div id="forward-meta" class="forward-meta-text">WhatsApp Forward • 08:42 AM</div>
+              </div>
+            </div>
+            <span class="status-tag status-unverified">UNVERIFIED DISPATCH</span>
+          </div>
+
+          <div id="forward-content-box" class="forward-content-box">
+            <!-- Raw content injected here -->
+          </div>
+
+          <div class="forward-card-footer">
+            <div class="meta-points">
+              <span><strong>SDGs:</strong> Quality Education (4) • Peace & Strong Institutions (16)</span>
+              <span><strong>Principle:</strong> Evidence first. Generation second.</span>
+            </div>
+            <button id="btn-start-investigation" class="btn btn-primary btn-glow">
+              <span>Initiate Claim Extraction</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STAGE 2: CLAIM EXTRACTION -->
+      <section id="stage-2" class="stage-section">
+        <div class="stage-header">
+          <span class="stage-tag">STAGE 02 / CLAIM DECOMPOSITION</span>
+          <h2 class="stage-title">Breaking the Forward into Atomic Claims</h2>
+          <p class="stage-desc">
+            A single forward often bundles truth with falsehood. DERAIL separates each factual assertion into an independent train carriage.
+          </p>
+        </div>
+
+        <div class="extraction-layout">
+          <div class="raw-source-pane">
+            <div class="pane-title">ORIGINAL FORWARD DISPATCH</div>
+            <div id="extraction-raw-text" class="shredding-text-box"></div>
+            <div class="extraction-status-bar">
+              <span class="pulse-scan"></span>
+              <span>NLP Assertion Parser Active</span>
+            </div>
+          </div>
+
+          <div class="extraction-arrow">
+            <div class="decoupling-line"></div>
+            <span class="decouple-badge">DECOUPLE</span>
+          </div>
+
+          <div class="extracted-carriages-pane">
+            <div class="pane-title">
+              <span>INDEPENDENT CLAIM CARRIAGES</span>
+              <span id="claim-count-badge" class="count-badge">0 CLAIMS</span>
+            </div>
+            <div id="extracted-claims-list" class="claims-stack">
+              <!-- Injected Claim Carriages -->
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button id="btn-to-track" class="btn btn-primary">
+            <span>Dispatch Claims onto Railway Track</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- STAGE 3: INVESTIGATION TRACK -->
+      <section id="stage-3" class="stage-section">
+        <div class="stage-header">
+          <span class="stage-tag">STAGE 03 / RAILWAY TRACK</span>
+          <h2 class="stage-title">Claims Enter the Investigation Corridor</h2>
+          <p class="stage-desc">
+            Claim carriages travel along the dual-rail corridor toward verified evidence registries and official gazette checkpoints.
+          </p>
+        </div>
+
+        <!-- Railway Track Visual Area -->
+        <div class="railway-corridor">
+          <div class="gantry-overhead">
+            <div class="gantry-label">SCANNING GANTRY // SENSOR ARRAY ACTIVE</div>
+            <div class="gantry-scanner-beam"></div>
+          </div>
+
+          <div class="track-lines-container">
+            <div class="rail-steel rail-top"></div>
+            <div class="rail-sleepers-row"></div>
+            <div class="rail-steel rail-bottom"></div>
+            <div id="track-claims-container" class="track-carriages-moving">
+              <!-- Moving claim carriages injected -->
+            </div>
+          </div>
+
+          <div class="track-telemetry-panel">
+            <div class="telemetry-item">
+              <span class="t-label">CORRIDOR STATUS</span>
+              <span class="t-val text-cyan">INSPECTION ACTIVE</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">EVIDENCE SOURCES</span>
+              <span class="t-val">CENTRAL BANK / GOVT GAZETTE / MET REGISTRIES</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">TARGET STATION</span>
+              <span class="t-val">EVIDENCE JUNCTION #04</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button id="btn-to-evidence" class="btn btn-primary">
+            <span>Dock at Evidence Station</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- STAGE 4: EVIDENCE STATION -->
+      <section id="stage-4" class="stage-section">
+        <div class="stage-header">
+          <span class="stage-tag">STAGE 04 / EVIDENCE STATION</span>
+          <h2 class="stage-title">Evidence Grounding & Citation Retrieval</h2>
+          <p class="stage-desc">
+            Evidence first. Generation second. Each claim is tethered directly to authentic official records, bulletins, and statutory rules.
+          </p>
+        </div>
+
+        <div id="evidence-cards-container" class="evidence-grid">
+          <!-- Evidence cards injected -->
+        </div>
+
+        <div class="stage-actions">
+          <button id="btn-to-derail" class="btn btn-primary btn-glow">
+            <span>Approach Derailment Checkpoint</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- STAGE 5: THE SIGNATURE DERAIL MOMENT -->
+      <section id="stage-5" class="stage-section">
+        <div class="stage-header">
+          <span class="stage-tag">STAGE 05 / DERAIL CHECKPOINT</span>
+          <h2 class="stage-title">The Derail Moment: Switch & Verdict Trigger</h2>
+          <p class="stage-desc">
+            Supported claims continue safely along the mainline. False or fabricated claims are immediately switched and derailed into the siding.
+          </p>
+        </div>
+
+        <div class="derail-stage-container">
+          <!-- Interactive Railway Switch Diagram -->
+          <div class="switch-visual-area">
+            <div class="track-junction-layout">
+              <!-- Main Line Track (Green Clear) -->
+              <div class="track-branch mainline-branch">
+                <div class="branch-signal signal-green">
+                  <span class="signal-lamp"></span>
+                  <span class="signal-title">MAINLINE // SUPPORTED FACTS</span>
+                </div>
+                <div class="rail-path path-main"></div>
+              </div>
+
+              <!-- Derail Spur / Siding (Red Stop) -->
+              <div class="track-branch derail-branch">
+                <div class="branch-signal signal-red">
+                  <span class="signal-lamp"></span>
+                  <span class="signal-title">DERAIL SIDING // UNVERIFIED OR FALSE</span>
+                </div>
+                <div class="rail-path path-derail"></div>
+                <div class="buffer-stop">BUFFER STOP</div>
+              </div>
+            </div>
+
+            <!-- Active Claim Inspection & Switch Action Area -->
+            <div id="active-derail-card-area" class="active-derail-box">
+              <!-- Dynamically populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-actions">
+          <button id="btn-to-verdict" class="btn btn-primary">
+            <span>View Final Verdict & Explanation</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- STAGE 6: FINAL VERDICT & PLAIN EXPLANATION -->
+      <section id="stage-6" class="stage-section">
+        <div class="stage-header">
+          <span class="stage-tag">STAGE 06 / DESTINATION & EXPLANATION</span>
+          <h2 class="stage-title">Forward Analysis Report</h2>
+          <p class="stage-desc">
+            Clear, transparent answers without opaque AI jargon. Understand exactly what was claimed, what the evidence proved, and why.
+          </p>
+        </div>
+
+        <!-- Overall Summary Banner -->
+        <div class="verdict-summary-banner">
+          <div class="summary-top">
+            <div class="summary-left">
+              <span class="summary-kicker">OVERALL FORWARD VERDICT</span>
+              <div id="overall-verdict-title" class="overall-verdict-badge">PARTIALLY SUPPORTED</div>
+            </div>
+            <div id="claims-tally-chips" class="tally-chips">
+              <!-- e.g. 1 Verified • 2 Derailed -->
+            </div>
+          </div>
+          <p id="overall-verdict-summary-text" class="summary-narrative">
+            <!-- Injected narrative -->
+          </p>
+        </div>
+
+        <!-- Claim-by-Claim Deep Dive -->
+        <div class="claims-report-section">
+          <div class="section-subhead">INDIVIDUAL CLAIM BREAKDOWN</div>
+          <div id="final-claims-report-grid" class="final-reports-grid">
+            <!-- Injected final report cards -->
+          </div>
+        </div>
+
+        <!-- Next Actions & Presentation Reset -->
+        <div class="final-actions-footer">
+          <button id="btn-test-another" class="btn btn-primary btn-glow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Verify Another Forward</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Slide-over Evidence Detail Modal -->
+    <div id="evidence-modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span id="modal-claim-number" class="modal-claim-tag">CLAIM 01</span>
+            <h3 id="modal-title" class="modal-heading">Official Evidence Inspection</h3>
+          </div>
+          <button id="btn-close-modal" class="btn-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div id="modal-body" class="modal-content-body">
+          <!-- Modal content injected -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Telemetry Bar -->
+    <footer class="app-footer">
+      <div class="footer-info">
+        <span class="indicator-active"></span>
+        <span>DERAIL System Engine • Prototype v1.0 • Evidence Grounding Mode</span>
+      </div>
+      <div class="footer-nav-buttons">
+        <button id="btn-prev-stage" class="btn btn-ghost" disabled>← Previous Stage</button>
+        <button id="btn-next-stage" class="btn btn-ghost">Next Stage →</button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
