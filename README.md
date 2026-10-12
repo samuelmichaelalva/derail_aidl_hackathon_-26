@@ -2,6 +2,10 @@
 
 ## Is This Forward True?
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-derailaidlhackathon--26.vercel.app-00dfa2?style=for-the-badge&logo=vercel)](https://derailaidlhackathon-26.vercel.app)
+
+**Live Prototype URL**: [https://derailaidlhackathon-26.vercel.app](https://derailaidlhackathon-26.vercel.app)
+
 DERAIL is a Round-1 prototype for Hack on Track 2026 under the GenAI domain.
 
 DERAIL is designed to demonstrate how forwarded information can be broken into individual claims, checked against evidence, and presented with a clear verdict and simple explanation.
