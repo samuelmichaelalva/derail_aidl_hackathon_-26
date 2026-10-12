@@ -1,488 +1,500 @@
-// DERAIL — Master Application Controller & State Machine
-// Modular, clean, and zero external dependencies
+// DERAIL — Minimalist, User-Friendly Forward Verification Engine
 
 (function() {
   'use strict';
 
-  // Application State
-  const state = {
-    currentStage: 1,
-    selectedCaseIndex: 0,
-    isAutoPlay: false,
-    autoPlayTimer: null,
-    totalStages: 6
-  };
+  // State
+  let currentCaseId = 'whatsapp-500';
+  let activeTab = 'whatsapp';
+  let isPlayingVoice = false;
 
-  // DOM Element Selectors
-  const dom = {
-    progressFill: document.getElementById('progress-indicator'),
-    stageNodes: document.querySelectorAll('.stage-node'),
-    sections: document.querySelectorAll('.stage-section'),
-    modalityPills: document.getElementById('modality-pills'),
-    
-    // Stage 1
-    forwardIcon: document.getElementById('forward-icon'),
-    forwardSender: document.getElementById('forward-sender'),
-    forwardMeta: document.getElementById('forward-meta'),
-    forwardContentBox: document.getElementById('forward-content-box'),
-    btnStart: document.getElementById('btn-start-investigation'),
+  // Cache DOM
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  const inputText = document.getElementById('input-text');
+  const btnClearText = document.getElementById('btn-clear-text');
+  const btnVerify = document.getElementById('btn-verify');
+  
+  const scannerSection = document.getElementById('scanner-section');
+  const scanStep1 = document.getElementById('scan-step-1');
+  const scanStep2 = document.getElementById('scan-step-2');
+  const scanStep3 = document.getElementById('scan-step-3');
 
-    // Stage 2
-    extractionRawText: document.getElementById('extraction-raw-text'),
-    claimCountBadge: document.getElementById('claim-count-badge'),
-    extractedClaimsList: document.getElementById('extracted-claims-list'),
-    btnToTrack: document.getElementById('btn-to-track'),
+  const resultsSection = document.getElementById('results-section');
+  const overallBadge = document.getElementById('overall-badge');
+  const resultModalityTag = document.getElementById('result-modality-tag');
+  const overallHeadline = document.getElementById('overall-headline');
+  const overallSummary = document.getElementById('overall-summary');
+  const originalQuoteText = document.getElementById('original-quote-text');
+  const claimsCountPill = document.getElementById('claims-count-pill');
+  const claimsGrid = document.getElementById('claims-grid');
+  
+  const btnCopyDebunk = document.getElementById('btn-copy-debunk');
+  const btnCheckAnother = document.getElementById('btn-check-another');
+  const toast = document.getElementById('toast');
 
-    // Stage 3
-    trackClaimsContainer: document.getElementById('track-claims-container'),
-    btnToEvidence: document.getElementById('btn-to-evidence'),
+  const btnVoiceToggle = document.getElementById('btn-voice-toggle');
+  const waveformContainer = document.getElementById('waveform-bars');
 
-    // Stage 4
-    evidenceGrid: document.getElementById('evidence-cards-container'),
-    btnToDerail: document.getElementById('btn-to-derail'),
-
-    // Stage 5
-    activeDerailBox: document.getElementById('active-derail-card-area'),
-    btnToVerdict: document.getElementById('btn-to-verdict'),
-
-    // Stage 6
-    overallVerdictTitle: document.getElementById('overall-verdict-title'),
-    overallVerdictSummary: document.getElementById('overall-verdict-summary-text'),
-    claimsTallyChips: document.getElementById('claims-tally-chips'),
-    finalReportsGrid: document.getElementById('final-claims-report-grid'),
-    btnTestAnother: document.getElementById('btn-test-another'),
-
-    // Nav & Controls
-    btnPrev: document.getElementById('btn-prev-stage'),
-    btnNext: document.getElementById('btn-next-stage'),
-    btnRestart: document.getElementById('btn-restart'),
-    modeAuto: document.getElementById('mode-auto'),
-    modeStep: document.getElementById('mode-step'),
-
-    // Modal
-    modal: document.getElementById('evidence-modal'),
-    modalClaimTag: document.getElementById('modal-claim-number'),
-    modalTitle: document.getElementById('modal-title'),
-    modalBody: document.getElementById('modal-body'),
-    btnCloseModal: document.getElementById('btn-close-modal')
-  };
-
-  // Helper to get active case
-  function getActiveCase() {
-    return DEMO_CASES[state.selectedCaseIndex];
-  }
-
-  // Initialize Application
+  // Initialize
   function init() {
-    renderModalityPills();
-    loadCase(0);
-    bindEvents();
-    goToStage(1);
+    setupTabs();
+    setupExamples();
+    setupWaveform();
+    setupActions();
+    setupAuth();
+    loadCase(currentCaseId);
   }
 
-  // Render Modality Selection Buttons
-  function renderModalityPills() {
-    dom.modalityPills.innerHTML = DEMO_CASES.map((c, idx) => `
-      <button class="modality-btn ${idx === state.selectedCaseIndex ? 'active' : ''}" data-case-index="${idx}">
-        <span>${c.icon}</span>
-        <span>${c.modalityLabel}</span>
-      </button>
-    `).join('');
-
-    dom.modalityPills.querySelectorAll('.modality-btn').forEach(btn => {
+  // Setup tabs
+  function setupTabs() {
+    tabButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        stopAutoPlay();
-        const idx = parseInt(btn.dataset.caseIndex, 10);
-        loadCase(idx);
-        goToStage(1);
+        const targetTab = btn.getAttribute('data-tab');
+        setActiveTab(targetTab);
+      });
+    });
+
+    btnClearText.addEventListener('click', () => {
+      inputText.value = '';
+      inputText.focus();
+    });
+  }
+
+  function setActiveTab(tab) {
+    activeTab = tab;
+    tabButtons.forEach(b => {
+      const isMatch = b.getAttribute('data-tab') === tab;
+      b.classList.toggle('active', isMatch);
+      b.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+
+    tabPanels.forEach(p => {
+      p.classList.toggle('active', p.id === `tab-panel-${tab}`);
+    });
+
+    // Auto load matched case for that tab
+    const matchedCase = DEMO_CASES.find(c => c.modality === tab);
+    if (matchedCase) {
+      loadCase(matchedCase.id, false);
+    }
+  }
+
+  // Setup sample chips
+  function setupExamples() {
+    document.querySelectorAll('[data-case]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const caseId = btn.getAttribute('data-case');
+        const targetCase = DEMO_CASES.find(c => c.id === caseId);
+        if (targetCase) {
+          setActiveTab(targetCase.modality);
+          loadCase(caseId, true);
+        }
       });
     });
   }
 
-  // Load Demonstration Scenario into Stage 1
-  function loadCase(index) {
-    state.selectedCaseIndex = index;
-    const current = getActiveCase();
-
-    // Update Modality Buttons Active State
-    dom.modalityPills.querySelectorAll('.modality-btn').forEach((b, i) => {
-      b.classList.toggle('active', i === index);
+  // Waveform visualization
+  function setupWaveform() {
+    if (!waveformContainer) return;
+    waveformContainer.innerHTML = '';
+    const heights = [35, 60, 80, 45, 90, 75, 50, 65, 85, 40, 95, 70, 60, 80, 45, 30, 65, 40, 85, 55];
+    heights.forEach(h => {
+      const bar = document.createElement('div');
+      bar.className = 'waveform-bar';
+      bar.style.height = `${h}%`;
+      waveformContainer.appendChild(bar);
     });
 
-    // Populate Stage 1 Header & Content
-    dom.forwardIcon.textContent = current.icon;
-    dom.forwardSender.textContent = current.sender;
-    dom.forwardMeta.textContent = `${current.modalityLabel} • ${current.timestamp}`;
+    if (btnVoiceToggle) {
+      btnVoiceToggle.addEventListener('click', () => {
+        isPlayingVoice = !isPlayingVoice;
+        btnVoiceToggle.textContent = isPlayingVoice ? '⏸' : '▶';
+        document.querySelectorAll('.waveform-bar').forEach((b, i) => {
+          b.classList.toggle('playing', isPlayingVoice);
+        });
+      });
+    }
+  }
 
-    let mediaHTML = '';
-    if (current.mediaPreview) {
-      if (current.mediaPreview.type === 'audio') {
-        const bars = current.mediaPreview.waveform.map(h => `<div class="wave-bar" style="height: ${h}%"></div>`).join('');
-        mediaHTML = `
-          <div class="media-preview-box">
-            <span style="font-size:1.2rem">🎙️</span>
-            <div class="audio-waveform-bars">${bars}</div>
-            <span style="font-size:0.78rem; color: var(--text-dim);">${current.mediaPreview.duration} Audio Voice Note</span>
-          </div>
-        `;
-      } else if (current.mediaPreview.type === 'pdf') {
-        mediaHTML = `
-          <div class="media-preview-box">
-            <span style="font-size:1.2rem">📄</span>
-            <div>
-              <div style="font-weight:600; font-size:0.85rem;">${current.mediaPreview.filename}</div>
-              <div style="font-size:0.75rem; color: var(--text-dim);">${current.mediaPreview.pages} Pages • ${current.mediaPreview.fileSize}</div>
-            </div>
-          </div>
-        `;
-      } else if (current.mediaPreview.type === 'url') {
-        mediaHTML = `
-          <div class="media-preview-box">
-            <span style="font-size:1.2rem">🔗</span>
-            <div>
-              <div style="font-size:0.75rem; color: var(--accent-cyan);">${current.mediaPreview.domain}</div>
-              <div style="font-weight:600; font-size:0.85rem;">${current.mediaPreview.headline}</div>
-            </div>
-          </div>
-        `;
-      } else if (current.mediaPreview.type === 'image') {
-        mediaHTML = `
-          <div class="media-preview-box">
-            <span style="font-size:1.2rem">🖼️</span>
-            <div>
-              <div style="font-weight:600; font-size:0.85rem;">${current.mediaPreview.title}</div>
-              <div style="font-size:0.75rem; color: var(--text-dim);">${current.mediaPreview.subtext}</div>
-            </div>
-          </div>
-        `;
+  // Load a case into inputs
+  function loadCase(caseId, shouldScroll = false) {
+    const data = DEMO_CASES.find(c => c.id === caseId);
+    if (!data) return;
+
+    currentCaseId = caseId;
+
+    if (data.modality === 'whatsapp' && inputText) {
+      inputText.value = data.rawContent;
+    }
+
+    if (shouldScroll) {
+      document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  // Setup actions
+  function setupActions() {
+    btnVerify.addEventListener('click', runVerification);
+
+    btnCheckAnother.addEventListener('click', () => {
+      resultsSection.classList.add('hidden');
+      document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth' });
+      if (activeTab === 'whatsapp') {
+        inputText.focus();
       }
-    }
-
-    dom.forwardContentBox.innerHTML = `
-      <p>${current.rawContent}</p>
-      ${mediaHTML}
-    `;
-  }
-
-  // Stage Transition Manager
-  function goToStage(stageNum) {
-    if (stageNum < 1 || stageNum > state.totalStages) return;
-    state.currentStage = stageNum;
-
-    // Update Progress Rail
-    const progressPercent = ((stageNum - 1) / (state.totalStages - 1)) * 100;
-    dom.progressFill.style.width = `${progressPercent}%`;
-
-    dom.stageNodes.forEach((node, idx) => {
-      const nStage = idx + 1;
-      node.classList.toggle('active', nStage === stageNum);
-      node.classList.toggle('completed', nStage < stageNum);
     });
 
-    // Toggle Stage Views
-    dom.sections.forEach((sec, idx) => {
-      sec.classList.toggle('active', idx + 1 === stageNum);
-    });
-
-    // Update Nav Buttons
-    dom.btnPrev.disabled = stageNum === 1;
-    dom.btnNext.disabled = stageNum === state.totalStages;
-
-    // Trigger Stage-Specific Renders
-    if (stageNum === 2) renderStage2();
-    if (stageNum === 3) renderStage3();
-    if (stageNum === 4) renderStage4();
-    if (stageNum === 5) renderStage5();
-    if (stageNum === 6) renderStage6();
-
-    // Handle Auto-Play Progression
-    if (state.isAutoPlay) {
-      scheduleNextAutoPlay(stageNum);
-    }
+    btnCopyDebunk.addEventListener('click', copyDebunkCard);
   }
 
-  // Schedule Next Step in Presentation Mode
-  function scheduleNextAutoPlay(currentStage) {
-    clearTimeout(state.autoPlayTimer);
-    if (currentStage >= state.totalStages) {
-      stopAutoPlay();
-      return;
+  // Trigger verification flow
+  function runVerification() {
+    const data = DEMO_CASES.find(c => c.id === currentCaseId) || DEMO_CASES[0];
+
+    // Show scanner, hide results
+    resultsSection.classList.add('hidden');
+    scannerSection.classList.remove('hidden');
+    scannerSection.scrollIntoView({ behavior: 'smooth' });
+
+    // Step 1
+    scanStep1.className = 'step-item step-active';
+    scanStep2.className = 'step-item';
+    scanStep3.className = 'step-item';
+
+    setTimeout(() => {
+      // Step 2
+      scanStep1.className = 'step-item step-done';
+      scanStep2.className = 'step-item step-active';
+    }, 400);
+
+    setTimeout(() => {
+      // Step 3
+      scanStep2.className = 'step-item step-done';
+      scanStep3.className = 'step-item step-active';
+    }, 800);
+
+    setTimeout(() => {
+      scanStep3.className = 'step-item step-done';
+      scannerSection.classList.add('hidden');
+      renderResults(data);
+      resultsSection.classList.remove('hidden');
+      resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }, 1200);
+  }
+
+  // Render results
+  function renderResults(data) {
+    // Overall verdict
+    overallBadge.textContent = data.overallVerdict;
+    overallBadge.className = 'verdict-tag ' + getVerdictClass(data.overallVerdict);
+
+    resultModalityTag.textContent = `${data.icon} ${data.modalityLabel}`;
+    overallHeadline.textContent = data.title;
+    overallSummary.textContent = data.overallSummary;
+    originalQuoteText.textContent = data.rawContent;
+
+    claimsCountPill.textContent = `${data.claims.length} Claims Extracted`;
+
+    // Render claims grid
+    claimsGrid.innerHTML = '';
+    data.claims.forEach((claim, idx) => {
+      const card = document.createElement('div');
+      card.className = 'claim-card';
+
+      const vClass = getVerdictClass(claim.verdict);
+
+      card.innerHTML = `
+        <div class="claim-header">
+          <span class="claim-number">CLAIM #${claim.number || (idx + 1)}</span>
+          <span class="claim-badge ${vClass}">${claim.badge || claim.verdict}</span>
+        </div>
+        <div class="claim-statement">"${escapeHtml(claim.claimText)}"</div>
+        <div class="claim-why"><strong>Why:</strong> ${escapeHtml(claim.why)}</div>
+        <div class="evidence-box">
+          <div class="evidence-header">
+            <span class="evidence-source">🏛️ ${escapeHtml(claim.evidence.source)}</span>
+            <span class="evidence-confidence">Confidence: ${claim.evidence.confidence}</span>
+          </div>
+          <div class="evidence-excerpt">${escapeHtml(claim.evidence.excerpt)}</div>
+        </div>
+      `;
+      claimsGrid.appendChild(card);
+    });
+  }
+
+  function getVerdictClass(verdict) {
+    const v = (verdict || '').toUpperCase();
+    if (v.includes('FALSE')) return 'verdict-false';
+    if (v.includes('PARTIAL')) return 'verdict-partially';
+    if (v.includes('VERIFIED')) return 'verdict-verified';
+    if (v.includes('OUTDATED')) return 'verdict-outdated';
+    return 'verdict-unconfirmed';
+  }
+
+  // Copy debunk message to clipboard
+  function copyDebunkCard() {
+    const data = DEMO_CASES.find(c => c.id === currentCaseId) || DEMO_CASES[0];
+    
+    let text = `🚨 *FACT CHECK ALERT* 🚨\n\n`;
+    text += `Regarding the forward: "${data.title}"\n`;
+    text += `Verdict: *${data.overallVerdict}*\n\n`;
+    text += `*The Truth:*\n${data.overallSummary}\n\n`;
+    text += `*Official Sources Checked:*\n`;
+    data.claims.forEach(c => {
+      text += `• ${c.evidence.source} (${c.evidence.sourceUrl})\n`;
+    });
+    text += `\n_Verified by DERAIL — Hack on Track 2026_`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied debunk summary! Ready to paste in WhatsApp.');
+    }).catch(() => {
+      showToast('Text copied!');
+    });
+  }
+
+  function showToast(msg) {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 2800);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, function(m) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[m];
+    });
+  }
+
+  // ==========================================================================
+  // Professional Authentication Module (Google & Amazon Grade)
+  // ==========================================================================
+  function setupAuth() {
+    const btnOpenAuth = document.getElementById('btn-open-auth');
+    const authModal = document.getElementById('auth-modal');
+    const btnCloseAuth = document.getElementById('btn-close-auth');
+    const tabSignIn = document.getElementById('auth-tab-signin');
+    const tabRegister = document.getElementById('auth-tab-register');
+    const formSignIn = document.getElementById('form-signin');
+    const formRegister = document.getElementById('form-register');
+    const btnGoogleSSO = document.getElementById('btn-google-sso');
+    const btnAmazonSSO = document.getElementById('btn-amazon-sso');
+    const userProfileBadge = document.getElementById('user-profile-badge');
+    const btnSignOut = document.getElementById('btn-sign-out');
+    const userNameDisplay = document.getElementById('user-name');
+    const userAvatarDisplay = document.getElementById('user-avatar');
+    const registerPasswordInput = document.getElementById('register-password');
+
+    if (!authModal) return;
+
+    // Open Modal
+    if (btnOpenAuth) {
+      btnOpenAuth.addEventListener('click', () => {
+        authModal.classList.remove('hidden');
+      });
     }
 
-    const delays = { 1: 4000, 2: 4500, 3: 4000, 4: 5500, 5: 6000 };
-    const delay = delays[currentStage] || 4500;
+    // Close Modal
+    if (btnCloseAuth) {
+      btnCloseAuth.addEventListener('click', () => {
+        authModal.classList.add('hidden');
+      });
+    }
 
-    state.autoPlayTimer = setTimeout(() => {
-      if (state.isAutoPlay && state.currentStage === currentStage) {
-        goToStage(currentStage + 1);
+    // Click outside to close
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) {
+        authModal.classList.add('hidden');
       }
-    }, delay);
-  }
-
-  function startAutoPlay() {
-    state.isAutoPlay = true;
-    dom.modeAuto.classList.add('active');
-    dom.modeStep.classList.remove('active');
-    scheduleNextAutoPlay(state.currentStage);
-  }
-
-  function stopAutoPlay() {
-    state.isAutoPlay = false;
-    clearTimeout(state.autoPlayTimer);
-    dom.modeAuto.classList.remove('active');
-    dom.modeStep.classList.add('active');
-  }
-
-  // ==========================================
-  // STAGE 2: CLAIM EXTRACTION (CARRIAGES)
-  // ==========================================
-  function renderStage2() {
-    const current = getActiveCase();
-    dom.extractionRawText.innerHTML = `<span>${current.rawContent}</span>`;
-    dom.claimCountBadge.textContent = `${current.claims.length} ATOMIC CLAIMS`;
-
-    dom.extractedClaimsList.innerHTML = current.claims.map((claim, idx) => `
-      <div class="claim-carriage-card" style="animation: fadeInStage 0.4s ease forwards ${idx * 0.15}s; opacity:0;">
-        <div class="carriage-header">
-          <span class="carriage-id-tag">CARRIAGE // CLAIM ${claim.number}</span>
-          <span class="pill pill-subtle">INDEPENDENT ASSERTION</span>
-        </div>
-        <p class="carriage-text">"${claim.claimText}"</p>
-      </div>
-    `).join('');
-  }
-
-  // ==========================================
-  // STAGE 3: INVESTIGATION TRACK
-  // ==========================================
-  function renderStage3() {
-    const current = getActiveCase();
-    dom.trackClaimsContainer.innerHTML = current.claims.map((claim) => `
-      <div class="track-carriage-mini">
-        <span class="wheel-dot"></span>
-        <span>CLAIM ${claim.number}: "${claim.claimText.slice(0, 32)}..."</span>
-        <span class="wheel-dot"></span>
-      </div>
-    `).join('');
-  }
-
-  // ==========================================
-  // STAGE 4: EVIDENCE STATION
-  // ==========================================
-  function renderStage4() {
-    const current = getActiveCase();
-    dom.evidenceGrid.innerHTML = current.claims.map((claim) => {
-      const relClass = claim.evidence.relation === 'SUPPORTS' ? 'relation-supports' :
-                       claim.evidence.relation === 'CONTRADICTS' ? 'relation-contradicts' : 'relation-unverified';
-      return `
-        <div class="evidence-card">
-          <div class="evidence-claim-context">
-            <strong style="color:var(--accent-cyan)">CLAIM ${claim.number}:</strong> "${claim.claimText}"
-          </div>
-          <div class="evidence-source-header">
-            <div>
-              <div class="source-title">${claim.evidence.source}</div>
-              <div class="source-type">${claim.evidence.sourceType} • ${claim.evidence.sourceDate}</div>
-            </div>
-            <span class="confidence-chip">${claim.evidence.confidence} Match</span>
-          </div>
-          <div class="evidence-quote-box">
-            ${claim.evidence.excerpt}
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="evidence-relation-tag ${relClass}">
-              ${claim.evidence.relation === 'SUPPORTS' ? '✓ SUPPORTS CLAIM' : '✕ CONTRADICTS CLAIM'}
-            </span>
-            <button class="btn btn-ghost" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="window.derailApp.openModal('${claim.id}')">
-              Inspect Citation ↗
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // ==========================================
-  // STAGE 5: THE DERAIL MOMENT (SWITCH & JUNCTION)
-  // ==========================================
-  function renderStage5() {
-    const current = getActiveCase();
-    dom.activeDerailBox.innerHTML = current.claims.map((claim, idx) => {
-      const isDerailed = claim.derailed;
-      return `
-        <div class="derail-interactive-card ${isDerailed ? 'derailed-active' : 'verified-active'}" style="animation-delay: ${idx * 0.2}s;">
-          ${isDerailed ? '<div class="derail-spark-burst">⚡ 💥</div>' : '<div class="derail-spark-burst">🟢 ✓</div>'}
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-            <span class="carriage-id-tag">CLAIM ${claim.number}</span>
-            <span class="pill ${isDerailed ? 'pill-subtle' : 'pill-accent'}">${claim.verdict}</span>
-          </div>
-          <p style="font-size:0.92rem; color:#f1f5f9; margin-bottom:0.5rem;">"${claim.claimText}"</p>
-          <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.5;">${claim.why}</div>
-          <div class="derail-action-banner">
-            <span style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-dim);">
-              SWITCH ACTION: ${isDerailed ? 'TRACK SIDING DERAILED' : 'MAINLINE CLEARED'}
-            </span>
-            <span class="derail-outcome-badge ${isDerailed ? 'outcome-derailed' : 'outcome-cleared'}">
-              ${isDerailed ? '✕ DERAIL' : '✓ PROCEED'}
-            </span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // ==========================================
-  // STAGE 6: FINAL VERDICT & PLAIN EXPLANATION
-  // ==========================================
-  function renderStage6() {
-    const current = getActiveCase();
-
-    // Verdict Badge styling
-    dom.overallVerdictTitle.textContent = current.overallVerdict;
-    dom.overallVerdictTitle.className = 'overall-verdict-badge';
-    if (current.overallVerdict === 'FALSE') dom.overallVerdictTitle.classList.add('badge-false');
-    else if (current.overallVerdict === 'PARTIALLY SUPPORTED') dom.overallVerdictTitle.classList.add('badge-partially-supported');
-    else dom.overallVerdictTitle.classList.add('badge-verified');
-
-    dom.overallVerdictSummary.textContent = current.overallSummary;
-
-    // Tallies
-    const verifiedCount = current.claims.filter(c => !c.derailed).length;
-    const derailedCount = current.claims.filter(c => c.derailed).length;
-
-    dom.claimsTallyChips.innerHTML = `
-      <span class="tally-chip tally-verified">✓ ${verifiedCount} Verified</span>
-      <span class="tally-chip tally-false">✕ ${derailedCount} Derailed</span>
-    `;
-
-    // Claim Breakdown List
-    dom.finalReportsGrid.innerHTML = current.claims.map(claim => {
-      const vClass = claim.verdictClass === 'verified' ? 'tally-verified' : 'tally-false';
-      return `
-        <div class="final-claim-card">
-          <div class="claim-num-pill">CLAIM ${claim.number}</div>
-          <div class="claim-details-col">
-            <div class="claim-quote-text">"${claim.claimText}"</div>
-            <div class="claim-why-box">
-              <strong style="color:#fff;">Explanation:</strong> ${claim.why}
-            </div>
-            <div class="claim-source-ref">
-              <span>🏛️ <strong>Source:</strong> ${claim.evidence.source}</span>
-              <span>•</span>
-              <span>📅 ${claim.evidence.sourceDate}</span>
-            </div>
-          </div>
-          <div class="claim-verdict-col">
-            <span class="final-verdict-badge ${vClass}">${claim.badge}</span>
-            <button class="btn btn-ghost" style="padding:0.25rem 0.6rem; font-size:0.75rem;" onclick="window.derailApp.openModal('${claim.id}')">
-              Evidence Trail ↗
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // Open Evidence Detail Modal
-  function openEvidenceModal(claimId) {
-    const current = getActiveCase();
-    const claim = current.claims.find(c => c.id === claimId);
-    if (!claim) return;
-
-    dom.modalClaimTag.textContent = `CLAIM ${claim.number} EVIDENCE TRAIL`;
-    dom.modalTitle.textContent = claim.evidence.source;
-
-    dom.modalBody.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:1rem;">
-        <div style="background:rgba(0,0,0,0.3); padding:0.85rem; border-radius:var(--radius-sm); border-left:3px solid var(--accent-cyan);">
-          <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.2rem;">INVESTIGATED ASSERTION</div>
-          <div style="font-size:0.95rem; color:#fff;">"${claim.claimText}"</div>
-        </div>
-        <div>
-          <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.25rem;">SOURCE METADATA</div>
-          <div style="font-size:0.85rem; color:#e2e8f0;">
-            • <strong>Registry:</strong> ${claim.evidence.sourceType}<br>
-            • <strong>Published:</strong> ${claim.evidence.sourceDate}<br>
-            • <strong>Corroboration Confidence:</strong> ${claim.evidence.confidence}
-          </div>
-        </div>
-        <div>
-          <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:0.25rem;">VERBATIM REGISTRY EXCERPT</div>
-          <div style="background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); font-style:italic; line-height:1.6; color:#cbd5e1;">
-            ${claim.evidence.excerpt}
-          </div>
-        </div>
-        <div style="background:${claim.derailed ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}; border:1px solid ${claim.derailed ? 'var(--accent-crimson)' : 'var(--accent-emerald)'}; padding:0.75rem; border-radius:var(--radius-sm);">
-          <strong style="color:#fff;">Verdict Conclusion:</strong> ${claim.why}
-        </div>
-      </div>
-    `;
-
-    dom.modal.classList.add('active');
-  }
-
-  function closeModal() {
-    dom.modal.classList.remove('active');
-  }
-
-  // Bind All Event Handlers
-  function bindEvents() {
-    // Stage Forward Buttons
-    dom.btnStart.addEventListener('click', () => goToStage(2));
-    dom.btnToTrack.addEventListener('click', () => goToStage(3));
-    dom.btnToEvidence.addEventListener('click', () => goToStage(4));
-    dom.btnToDerail.addEventListener('click', () => goToStage(5));
-    dom.btnToVerdict.addEventListener('click', () => goToStage(6));
-
-    // Reset / Test Another
-    dom.btnTestAnother.addEventListener('click', () => {
-      stopAutoPlay();
-      const nextCase = (state.selectedCaseIndex + 1) % DEMO_CASES.length;
-      loadCase(nextCase);
-      goToStage(1);
     });
 
-    dom.btnRestart.addEventListener('click', () => {
-      stopAutoPlay();
-      goToStage(1);
+    // Escape key to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !authModal.classList.contains('hidden')) {
+        authModal.classList.add('hidden');
+      }
     });
 
-    // Navigation Bar Stage Jumps
-    dom.stageNodes.forEach(node => {
-      node.addEventListener('click', () => {
-        stopAutoPlay();
-        const s = parseInt(node.dataset.stage, 10);
-        goToStage(s);
+    // Switch between Sign In and Register tabs
+    function switchAuthTab(target) {
+      const isSignIn = target === 'signin';
+      tabSignIn.classList.toggle('active', isSignIn);
+      tabSignIn.setAttribute('aria-selected', isSignIn ? 'true' : 'false');
+      tabRegister.classList.toggle('active', !isSignIn);
+      tabRegister.setAttribute('aria-selected', !isSignIn ? 'true' : 'false');
+
+      formSignIn.classList.toggle('hidden', !isSignIn);
+      formRegister.classList.toggle('hidden', isSignIn);
+    }
+
+    if (tabSignIn && tabRegister) {
+      tabSignIn.addEventListener('click', () => switchAuthTab('signin'));
+      tabRegister.addEventListener('click', () => switchAuthTab('register'));
+    }
+
+    // Password visibility toggles
+    document.querySelectorAll('.btn-toggle-eye').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const targetInput = document.getElementById(targetId);
+        if (targetInput) {
+          const isPassword = targetInput.type === 'password';
+          targetInput.type = isPassword ? 'text' : 'password';
+          btn.textContent = isPassword ? '🙈' : '👁️';
+        }
       });
     });
 
-    // Footer Next / Prev
-    dom.btnPrev.addEventListener('click', () => {
-      stopAutoPlay();
-      goToStage(state.currentStage - 1);
-    });
+    // Live Password Strength Meter
+    if (registerPasswordInput) {
+      registerPasswordInput.addEventListener('input', (e) => {
+        updatePasswordStrength(e.target.value);
+      });
+    }
 
-    dom.btnNext.addEventListener('click', () => {
-      stopAutoPlay();
-      goToStage(state.currentStage + 1);
-    });
+    function updatePasswordStrength(val) {
+      const seg1 = document.getElementById('strength-seg-1');
+      const seg2 = document.getElementById('strength-seg-2');
+      const seg3 = document.getElementById('strength-seg-3');
+      const seg4 = document.getElementById('strength-seg-4');
+      const statusText = document.getElementById('strength-status-text');
 
-    // Mode Toggle
-    dom.modeAuto.addEventListener('click', startAutoPlay);
-    dom.modeStep.addEventListener('click', stopAutoPlay);
+      // Reset
+      [seg1, seg2, seg3, seg4].forEach(s => {
+        s.className = 'strength-segment';
+      });
 
-    // Modal Close
-    dom.btnCloseModal.addEventListener('click', closeModal);
-    dom.modal.addEventListener('click', (e) => {
-      if (e.target === dom.modal) closeModal();
-    });
+      if (!val || val.length === 0) {
+        statusText.textContent = 'Enter password';
+        statusText.style.color = 'var(--text-muted)';
+        return;
+      }
+
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      if (score === 1 || val.length < 8) {
+        seg1.classList.add('active-weak');
+        statusText.textContent = 'Weak';
+        statusText.style.color = 'var(--accent-rose)';
+      } else if (score === 2) {
+        seg1.classList.add('active-fair');
+        seg2.classList.add('active-fair');
+        statusText.textContent = 'Moderate';
+        statusText.style.color = 'var(--accent-amber)';
+      } else if (score === 3) {
+        seg1.classList.add('active-good');
+        seg2.classList.add('active-good');
+        seg3.classList.add('active-good');
+        statusText.textContent = 'Strong';
+        statusText.style.color = 'var(--accent-cyan)';
+      } else {
+        seg1.classList.add('active-strong');
+        seg2.classList.add('active-strong');
+        seg3.classList.add('active-strong');
+        seg4.classList.add('active-strong');
+        statusText.textContent = 'Excellent';
+        statusText.style.color = 'var(--accent-emerald)';
+      }
+    }
+
+    // Login Action Helper
+    function completeAuthentication(name, email, provider) {
+      authModal.classList.add('hidden');
+      if (btnOpenAuth) btnOpenAuth.classList.add('hidden');
+      if (userProfileBadge) {
+        userProfileBadge.classList.remove('hidden');
+        if (userNameDisplay) userNameDisplay.textContent = name;
+        if (userAvatarDisplay) {
+          const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+          userAvatarDisplay.textContent = initials || 'U';
+        }
+      }
+      showToast(`Welcome ${name}! Signed in via ${provider || 'DERAIL Secure ID'}.`);
+    }
+
+    // Google SSO Click
+    if (btnGoogleSSO) {
+      btnGoogleSSO.addEventListener('click', () => {
+        btnGoogleSSO.innerHTML = `<span>Connecting to Google Identity...</span>`;
+        setTimeout(() => {
+          btnGoogleSSO.innerHTML = `
+            <svg class="sso-icon" viewBox="0 0 24 24" width="18" height="18">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Continue with Google</span>
+          `;
+          completeAuthentication('Samuel Alva', 'samuelalva2006@gmail.com', 'Google SSO');
+        }, 700);
+      });
+    }
+
+    // Amazon SSO Click
+    if (btnAmazonSSO) {
+      btnAmazonSSO.addEventListener('click', () => {
+        btnAmazonSSO.innerHTML = `<span>Connecting to Amazon Auth...</span>`;
+        setTimeout(() => {
+          btnAmazonSSO.innerHTML = `
+            <svg class="sso-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M13.9 14.3c-2.4 1.8-5.9 2.7-8.9 2.7-4.2 0-8-1.6-10.9-4.2-.3-.2-.3-.6 0-.8.4-.3.9-.3 1.2 0 2.6 2.3 6.1 3.7 9.8 3.7 2.6 0 5.6-.8 7.7-2.2.4-.3.9-.1 1.1.3.2.4.1.9 0 1.2zm1.6-1.7c-.3-.4-1.8-.2-2.8.3-.3.2-.4.5-.2.8.2.3.5.4.8.2 1-.5 2.2-.6 2.5-.3.3.3.1 1.3-.7 2.1-.2.2-.2.5 0 .8.2.2.5.2.8 0 1.1-1.1 1.4-2.5 1-3.1-.4-.6-1.1-.8-1.6-.8z"/>
+            </svg>
+            <span>Continue with Amazon</span>
+          `;
+          completeAuthentication('Samuel Alva', 'samuelalva2006@gmail.com', 'Amazon Identity');
+        }, 700);
+      });
+    }
+
+    // Form Sign In Submit
+    if (formSignIn) {
+      formSignIn.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('signin-email').value || 'samuelalva2006@gmail.com';
+        const name = email.split('@')[0];
+        completeAuthentication(name, email, 'Email');
+      });
+    }
+
+    // Form Register Submit
+    if (formRegister) {
+      formRegister.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('register-name').value || 'New User';
+        const email = document.getElementById('register-email').value || 'user@example.com';
+        completeAuthentication(name, email, 'Email');
+      });
+    }
+
+    // Sign Out
+    if (btnSignOut) {
+      btnSignOut.addEventListener('click', () => {
+        if (userProfileBadge) userProfileBadge.classList.add('hidden');
+        if (btnOpenAuth) btnOpenAuth.classList.remove('hidden');
+        showToast('Signed out of DERAIL session.');
+      });
+    }
   }
 
-  // Expose Modal Opener for inline handlers
-  window.derailApp = {
-    openModal: openEvidenceModal
-  };
+  // Run on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 
-  // Launch
-  document.addEventListener('DOMContentLoaded', init);
 })();
