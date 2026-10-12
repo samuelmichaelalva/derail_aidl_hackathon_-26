@@ -1,4 +1,4 @@
-# DERAIL
+# Derail
 
 ## Is This Forward True?
 
@@ -6,9 +6,9 @@
 
 **Live Prototype URL**: [https://derailaidlhackathon-26.vercel.app](https://derailaidlhackathon-26.vercel.app)
 
-DERAIL is a Round-1 prototype for Hack on Track 2026 under the GenAI domain.
+Derail is a Round-1 prototype for Hack on Track 2026 under the GenAI domain.
 
-DERAIL is designed to demonstrate how forwarded information can be broken into individual claims, checked against evidence, and presented with a clear verdict and simple explanation.
+Derail is designed to demonstrate how forwarded information can be broken into individual claims, checked against evidence, and presented with a clear verdict and simple explanation.
 
 ### Core Concept
 
