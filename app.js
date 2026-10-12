@@ -244,7 +244,7 @@
     data.claims.forEach(c => {
       text += `• ${c.evidence.source} (${c.evidence.sourceUrl})\n`;
     });
-    text += `\n_Verified by DERAIL — Hack on Track 2026_`;
+    text += `\n_Verified by Derail — Hack on Track 2026_`;
 
     navigator.clipboard.writeText(text).then(() => {
       showToast('Copied debunk summary! Ready to paste in WhatsApp.');
@@ -276,8 +276,22 @@
   }
 
   // ==========================================================================
-  // Professional Authentication Module (Google & Amazon Grade)
+  // Professional Authentication Module & Interactive Action Gate
   // ==========================================================================
+  let isAuthenticated = false;
+
+  function requireAuth(reasonMsg) {
+    if (isAuthenticated) return true;
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) {
+      authModal.classList.remove('hidden');
+      showToast(reasonMsg || 'Please sign in or register to verify claims and use Derail.');
+      const emailInput = document.getElementById('signin-email');
+      if (emailInput) setTimeout(() => emailInput.focus(), 150);
+    }
+    return false;
+  }
+
   function setupAuth() {
     const btnOpenAuth = document.getElementById('btn-open-auth');
     const authModal = document.getElementById('auth-modal');
@@ -287,7 +301,6 @@
     const formSignIn = document.getElementById('form-signin');
     const formRegister = document.getElementById('form-register');
     const btnGoogleSSO = document.getElementById('btn-google-sso');
-    const btnAmazonSSO = document.getElementById('btn-amazon-sso');
     const userProfileBadge = document.getElementById('user-profile-badge');
     const btnSignOut = document.getElementById('btn-sign-out');
     const userNameDisplay = document.getElementById('user-name');
@@ -295,6 +308,31 @@
     const registerPasswordInput = document.getElementById('register-password');
 
     if (!authModal) return;
+
+    // Interactive Action Gate: Hover is free, but clicking any action button requires login
+    document.addEventListener('click', (e) => {
+      if (isAuthenticated) return;
+
+      // Allow interactions within the auth modal itself
+      if (e.target.closest('#auth-modal')) return;
+
+      // Allow opening auth via top bar button
+      if (e.target.closest('#btn-open-auth')) return;
+
+      // Allow passive anchor links (terms, external links, etc.)
+      if (e.target.closest('a') && !e.target.closest('.sample-pill')) return;
+
+      // Intercept any button, sample scenario pill, tab switcher, or dropzone click
+      const interactiveElem = e.target.closest(
+        'button, .sample-pill, .tab-btn, .drop-zone, #btn-verify, #btn-clear, #drop-zone, .btn-secondary, .btn-primary, [role="tab"]'
+      );
+
+      if (interactiveElem) {
+        e.preventDefault();
+        e.stopPropagation();
+        requireAuth('Please sign in or create an account to use this feature.');
+      }
+    }, true);
 
     // Open Modal
     if (btnOpenAuth) {
@@ -368,14 +406,15 @@
       const seg4 = document.getElementById('strength-seg-4');
       const statusText = document.getElementById('strength-status-text');
 
-      // Reset
       [seg1, seg2, seg3, seg4].forEach(s => {
-        s.className = 'strength-segment';
+        if (s) s.className = 'strength-segment';
       });
 
       if (!val || val.length === 0) {
-        statusText.textContent = 'Enter password';
-        statusText.style.color = 'var(--text-muted)';
+        if (statusText) {
+          statusText.textContent = 'Enter password';
+          statusText.style.color = 'var(--text-muted)';
+        }
         return;
       }
 
@@ -386,43 +425,52 @@
       if (/[^A-Za-z0-9]/.test(val)) score++;
 
       if (score === 1 || val.length < 8) {
-        seg1.classList.add('active-weak');
-        statusText.textContent = 'Weak';
-        statusText.style.color = 'var(--accent-rose)';
+        if (seg1) seg1.classList.add('active-weak');
+        if (statusText) {
+          statusText.textContent = 'Weak';
+          statusText.style.color = 'var(--accent-rose)';
+        }
       } else if (score === 2) {
-        seg1.classList.add('active-fair');
-        seg2.classList.add('active-fair');
-        statusText.textContent = 'Moderate';
-        statusText.style.color = 'var(--accent-amber)';
+        if (seg1) seg1.classList.add('active-fair');
+        if (seg2) seg2.classList.add('active-fair');
+        if (statusText) {
+          statusText.textContent = 'Moderate';
+          statusText.style.color = 'var(--accent-amber)';
+        }
       } else if (score === 3) {
-        seg1.classList.add('active-good');
-        seg2.classList.add('active-good');
-        seg3.classList.add('active-good');
-        statusText.textContent = 'Strong';
-        statusText.style.color = 'var(--accent-cyan)';
+        if (seg1) seg1.classList.add('active-good');
+        if (seg2) seg2.classList.add('active-good');
+        if (seg3) seg3.classList.add('active-good');
+        if (statusText) {
+          statusText.textContent = 'Strong';
+          statusText.style.color = 'var(--accent-cyan)';
+        }
       } else {
-        seg1.classList.add('active-strong');
-        seg2.classList.add('active-strong');
-        seg3.classList.add('active-strong');
-        seg4.classList.add('active-strong');
-        statusText.textContent = 'Excellent';
-        statusText.style.color = 'var(--accent-emerald)';
+        if (seg1) seg1.classList.add('active-strong');
+        if (seg2) seg2.classList.add('active-strong');
+        if (seg3) seg3.classList.add('active-strong');
+        if (seg4) seg4.classList.add('active-strong');
+        if (statusText) {
+          statusText.textContent = 'Excellent';
+          statusText.style.color = 'var(--accent-emerald)';
+        }
       }
     }
 
     // Login Action Helper
     function completeAuthentication(name, email, provider) {
+      isAuthenticated = true;
       authModal.classList.add('hidden');
       if (btnOpenAuth) btnOpenAuth.classList.add('hidden');
       if (userProfileBadge) {
         userProfileBadge.classList.remove('hidden');
         if (userNameDisplay) userNameDisplay.textContent = name;
         if (userAvatarDisplay) {
-          const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-          userAvatarDisplay.textContent = initials || 'U';
+          const initials = (name || 'User').trim().split(/\s+/).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
+          userAvatarDisplay.textContent = initials;
         }
       }
-      showToast(`Welcome ${name}! Signed in via ${provider || 'DERAIL Secure ID'}.`);
+      showToast(`Welcome ${name}! Signed in via ${provider || 'Derail Secure ID'}.`);
     }
 
     // Google SSO Click
@@ -439,23 +487,7 @@
             </svg>
             <span>Continue with Google</span>
           `;
-          completeAuthentication('Samuel Alva', 'samuelalva2006@gmail.com', 'Google SSO');
-        }, 700);
-      });
-    }
-
-    // Amazon SSO Click
-    if (btnAmazonSSO) {
-      btnAmazonSSO.addEventListener('click', () => {
-        btnAmazonSSO.innerHTML = `<span>Connecting to Amazon Auth...</span>`;
-        setTimeout(() => {
-          btnAmazonSSO.innerHTML = `
-            <svg class="sso-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path d="M13.9 14.3c-2.4 1.8-5.9 2.7-8.9 2.7-4.2 0-8-1.6-10.9-4.2-.3-.2-.3-.6 0-.8.4-.3.9-.3 1.2 0 2.6 2.3 6.1 3.7 9.8 3.7 2.6 0 5.6-.8 7.7-2.2.4-.3.9-.1 1.1.3.2.4.1.9 0 1.2zm1.6-1.7c-.3-.4-1.8-.2-2.8.3-.3.2-.4.5-.2.8.2.3.5.4.8.2 1-.5 2.2-.6 2.5-.3.3.3.1 1.3-.7 2.1-.2.2-.2.5 0 .8.2.2.5.2.8 0 1.1-1.1 1.4-2.5 1-3.1-.4-.6-1.1-.8-1.6-.8z"/>
-            </svg>
-            <span>Continue with Amazon</span>
-          `;
-          completeAuthentication('Samuel Alva', 'samuelalva2006@gmail.com', 'Amazon Identity');
+          completeAuthentication('Alex Morgan', 'alex.morgan@gmail.com', 'Google SSO');
         }, 700);
       });
     }
@@ -464,9 +496,15 @@
     if (formSignIn) {
       formSignIn.addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.getElementById('signin-email').value || 'samuelalva2006@gmail.com';
-        const name = email.split('@')[0];
-        completeAuthentication(name, email, 'Email');
+        const emailInput = document.getElementById('signin-email');
+        const emailVal = emailInput ? emailInput.value.trim() : '';
+        if (!emailVal) {
+          showToast('Please enter your email address to continue.');
+          return;
+        }
+        const rawName = emailVal.split('@')[0];
+        const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        completeAuthentication(formattedName, emailVal, 'Email');
       });
     }
 
@@ -474,18 +512,22 @@
     if (formRegister) {
       formRegister.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('register-name').value || 'New User';
-        const email = document.getElementById('register-email').value || 'user@example.com';
-        completeAuthentication(name, email, 'Email');
+        const nameInput = document.getElementById('register-name');
+        const emailInput = document.getElementById('register-email');
+        const nameVal = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Alex Morgan';
+        const emailVal = emailInput && emailInput.value.trim() ? emailInput.value.trim() : 'alex.morgan@example.com';
+        completeAuthentication(nameVal, emailVal, 'Derail Secure ID');
       });
     }
 
     // Sign Out
     if (btnSignOut) {
-      btnSignOut.addEventListener('click', () => {
+      btnSignOut.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isAuthenticated = false;
         if (userProfileBadge) userProfileBadge.classList.add('hidden');
         if (btnOpenAuth) btnOpenAuth.classList.remove('hidden');
-        showToast('Signed out of DERAIL session.');
+        showToast('Signed out of Derail session.');
       });
     }
   }
